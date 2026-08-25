@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Plus, Search, List, Grid, Filter, X } from 'lucide-react';
@@ -8,7 +8,7 @@ import { formatCurrency, formatArea, formatDimensions } from '@/lib/utils/format
 import { PROPERTY_TYPES, PROPERTY_STATUSES, FACING_OPTIONS, SMART_FILTERS } from '@/lib/utils/constants';
 import styles from './properties.module.css';
 
-export default function PropertiesPage() {
+function PropertiesContent() {
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -309,5 +309,13 @@ export default function PropertiesPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function PropertiesPage() {
+  return (
+    <Suspense fallback={<div className="skeleton" style={{ height: 200, borderRadius: 8 }} />}>
+      <PropertiesContent />
+    </Suspense>
   );
 }
