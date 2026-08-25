@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import { ArrowLeft, Save, Upload, X, Image as ImageIcon } from 'lucide-react';
 import { PROPERTY_TYPES, PROPERTY_STATUSES, FACING_OPTIONS, AREA_UNITS } from '@/lib/utils/constants';
 import { calculateArea, calculateTotalValue, calculateRate } from '@/lib/utils/calculations';
-import addStyles from '../add/add.module.css';
+import addStyles from '../../add/add.module.css';
 
 export default function EditPropertyPage() {
   const { id } = useParams();

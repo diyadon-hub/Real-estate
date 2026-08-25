@@ -390,7 +390,7 @@ CREATE TABLE activity_log (
 -- ============================================================
 CREATE TABLE document_requirements (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   is_default BOOLEAN DEFAULT TRUE,
   sort_order INTEGER DEFAULT 0,
@@ -399,11 +399,11 @@ CREATE TABLE document_requirements (
 
 -- Insert default document requirements
 INSERT INTO document_requirements (id, user_id, name, sort_order) VALUES
-  (uuid_generate_v4(), '00000000-0000-0000-0000-000000000000', 'Sale Deed', 1),
-  (uuid_generate_v4(), '00000000-0000-0000-0000-000000000000', 'RTC', 2),
-  (uuid_generate_v4(), '00000000-0000-0000-0000-000000000000', 'Khata', 3),
-  (uuid_generate_v4(), '00000000-0000-0000-0000-000000000000', 'EC', 4),
-  (uuid_generate_v4(), '00000000-0000-0000-0000-000000000000', 'Layout Approval', 5);
+  (uuid_generate_v4(), NULL, 'Sale Deed', 1),
+  (uuid_generate_v4(), NULL, 'RTC', 2),
+  (uuid_generate_v4(), NULL, 'Khata', 3),
+  (uuid_generate_v4(), NULL, 'EC', 4),
+  (uuid_generate_v4(), NULL, 'Layout Approval', 5);
 
 -- ============================================================
 -- INDEXES
@@ -609,7 +609,7 @@ CREATE POLICY areas_update ON areas FOR UPDATE USING (auth.uid() = user_id);
 CREATE POLICY areas_delete ON areas FOR DELETE USING (auth.uid() = user_id);
 
 -- Document requirements
-CREATE POLICY doc_req_select ON document_requirements FOR SELECT USING (auth.uid() = user_id OR user_id = '00000000-0000-0000-0000-000000000000');
+CREATE POLICY doc_req_select ON document_requirements FOR SELECT USING (auth.uid() = user_id OR user_id IS NULL);
 CREATE POLICY doc_req_insert ON document_requirements FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY doc_req_update ON document_requirements FOR UPDATE USING (auth.uid() = user_id);
 CREATE POLICY doc_req_delete ON document_requirements FOR DELETE USING (auth.uid() = user_id);
@@ -635,19 +635,20 @@ CREATE POLICY doc_req_delete ON document_requirements FOR DELETE USING (auth.uid
 -- ============================================================
 -- TRIGGER: Auto-create profile on user signup
 -- ============================================================
-CREATE OR REPLACE FUNCTION handle_new_user()
+CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO profiles (id, email, full_name)
+  INSERT INTO public.profiles (id, email, full_name)
   VALUES (NEW.id, NEW.email, NEW.raw_user_meta_data->>'full_name');
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW
-  EXECUTE FUNCTION handle_new_user();
+  EXECUTE FUNCTION public.handle_new_user();
 
 -- ============================================================
 -- TRIGGER: Update updated_at on modification
