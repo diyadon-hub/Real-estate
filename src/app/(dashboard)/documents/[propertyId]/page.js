@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { ArrowLeft, Plus, FileText, Download, Trash2, Eye, CheckCircle2, AlertCircle, Minus, Upload } from 'lucide-react';
+import { ArrowLeft, Plus, FileText, Download, Trash2, Eye, CheckCircle2, AlertCircle, Minus, Upload, Share2 } from 'lucide-react';
 import { DOCUMENT_CATEGORIES } from '@/lib/utils/constants';
 import { formatDate, formatFileSize } from '@/lib/utils/formatting';
 
@@ -82,6 +82,26 @@ export default function PropertyDocumentsPage() {
     status: existingCategories.includes(name) ? 'complete' : 'missing',
   }));
   const completeCount = completeness.filter(c => c.status === 'complete').length;
+
+  const handleShare = async (doc) => {
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: doc.name || doc.file_name,
+          text: `Here is the document: ${doc.name || doc.file_name}`,
+          url: doc.file_url,
+        });
+      } else {
+        await navigator.clipboard.writeText(doc.file_url);
+        alert('Document link copied to clipboard!');
+      }
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        console.error('Share failed:', err);
+        alert('Failed to share document. You can copy the link manually.');
+      }
+    }
+  };
 
   if (loading) return <div style={{ maxWidth: 800 }}><div className="skeleton" style={{ height: 300, borderRadius: 12 }} /></div>;
 
@@ -183,9 +203,10 @@ export default function PropertyDocumentsPage() {
                   <td>{formatFileSize(doc.file_size)}</td>
                   <td>
                     <div style={{ display: 'flex', gap: 4 }}>
-                      <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-icon btn-sm"><Eye size={14} /></a>
-                      <a href={doc.file_url} download className="btn btn-ghost btn-icon btn-sm"><Download size={14} /></a>
-                      <button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleDelete(doc.id)} style={{ color: 'var(--color-danger)' }}><Trash2 size={14} /></button>
+                      <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-icon btn-sm" title="View"><Eye size={14} /></a>
+                      <a href={doc.file_url} download className="btn btn-ghost btn-icon btn-sm" title="Download"><Download size={14} /></a>
+                      <button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleShare(doc)} title="Share"><Share2 size={14} /></button>
+                      <button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleDelete(doc.id)} style={{ color: 'var(--color-danger)' }} title="Delete"><Trash2 size={14} /></button>
                     </div>
                   </td>
                 </tr>

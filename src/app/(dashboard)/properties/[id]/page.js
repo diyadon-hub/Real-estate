@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import {
   ArrowLeft, Edit, Trash2, MapPin, Ruler, Compass,
   DollarSign, FileText, Users, Activity, Image as ImageIcon,
-  Calendar, Tag, Building2, ExternalLink
+  Calendar, Tag, Building2, ExternalLink, Lock, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { formatCurrency, formatCurrencyFull, formatArea, formatDimensions, formatRate, formatDate, formatRelativeTime } from '@/lib/utils/formatting';
 import styles from './detail.module.css';
@@ -23,6 +23,7 @@ export default function PropertyDetailPage() {
   const [loading, setLoading] = useState(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [showConfidential, setShowConfidential] = useState(false);
 
   useEffect(() => { loadProperty(); }, [id]);
 
@@ -73,6 +74,7 @@ export default function PropertyDetailPage() {
   if (!property) return null;
 
   const p = property;
+  const mapApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
   return (
     <div className={styles.page}>
@@ -112,10 +114,11 @@ export default function PropertyDetailPage() {
             <h3 className="section-title" style={{ marginBottom: 'var(--space-base)' }}>Overview</h3>
             <div className={styles.detailGrid}>
               {p.total_area && <div className={styles.detailItem}><Ruler size={14} /><span className={styles.detailLabel}>Area</span><span className={styles.detailValue}>{formatArea(p.total_area, p.area_unit)}</span></div>}
-              {(p.length && p.width) && <div className={styles.detailItem}><Ruler size={14} /><span className={styles.detailLabel}>Dimensions</span><span className={styles.detailValue}>{formatDimensions(p.length, p.width)} ft</span></div>}
+              {(p.length && p.width) && <div className={styles.detailItem}><Ruler size={14} /><span className={styles.detailLabel}>Dimensions</span><span className={styles.detailValue}>{formatDimensions(p.length, p.width)}</span></div>}
               {p.facing && <div className={styles.detailItem}><Compass size={14} /><span className={styles.detailLabel}>Facing</span><span className={styles.detailValue}>{p.facing}</span></div>}
               {p.road_width && <div className={styles.detailItem}><span className={styles.detailLabel}>Road Width</span><span className={styles.detailValue}>{p.road_width}</span></div>}
               {p.is_corner && <div className={styles.detailItem}><span className={styles.detailLabel}>Corner</span><span className={styles.detailValue}>Yes</span></div>}
+              {p.number_of_floors !== null && p.number_of_floors !== undefined && <div className={styles.detailItem}><Building2 size={14} /><span className={styles.detailLabel}>Floors</span><span className={styles.detailValue}>{p.number_of_floors}</span></div>}
               {p.plot_number && <div className={styles.detailItem}><span className={styles.detailLabel}>Plot No.</span><span className={styles.detailValue}>{p.plot_number}</span></div>}
               {p.survey_number && <div className={styles.detailItem}><span className={styles.detailLabel}>Survey No.</span><span className={styles.detailValue}>{p.survey_number}</span></div>}
               {p.address && <div className={styles.detailItem}><MapPin size={14} /><span className={styles.detailLabel}>Address</span><span className={styles.detailValue}>{p.address}</span></div>}
@@ -138,21 +141,40 @@ export default function PropertyDetailPage() {
           )}
 
           {/* Map */}
-          {p.latitude && p.longitude && (
+          {(p.latitude && p.longitude) || p.google_maps_link ? (
             <div className="card">
               <div className="section-header">
                 <h3 className="section-title">Location</h3>
-                <a href={`https://www.google.com/maps?q=${p.latitude},${p.longitude}`} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm">
-                  <ExternalLink size={14} /> Open in Maps
-                </a>
+                {p.latitude && p.longitude && (
+                  <a href={`https://www.google.com/maps?q=${p.latitude},${p.longitude}`} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm">
+                    <ExternalLink size={14} /> Open in Maps
+                  </a>
+                )}
               </div>
-              <div className={styles.mapPlaceholder}>
-                <MapPin size={24} />
-                <p>{p.latitude.toFixed(6)}, {p.longitude.toFixed(6)}</p>
-                <span className="form-hint">Google Maps will load here when API key is configured</span>
-              </div>
+              
+              {p.latitude && p.longitude ? (
+                <div className={styles.mapEmbedContainer}>
+                   <iframe
+                      width="100%"
+                      height="300"
+                      style={{ border: 0, borderRadius: 'var(--radius-md)' }}
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                      src={`https://www.google.com/maps/embed/v1/place?key=${mapApiKey || ''}&q=${p.latitude},${p.longitude}&zoom=15`}
+                      allowFullScreen
+                    />
+                </div>
+              ) : p.google_maps_link ? (
+                 <div className={styles.mapPlaceholder}>
+                   <MapPin size={24} />
+                   <p>Location linked</p>
+                    <a href={p.google_maps_link} target="_blank" rel="noopener noreferrer" className="btn btn-primary btn-sm">
+                      <ExternalLink size={14} /> View on Google Maps
+                    </a>
+                 </div>
+              ) : null}
             </div>
-          )}
+          ) : null}
 
           {/* Description */}
           {p.description && (
@@ -173,29 +195,56 @@ export default function PropertyDetailPage() {
 
         {/* Right Column */}
         <div className={styles.rightCol}>
-          {/* Financial */}
+          {/* Pricing */}
           <div className="card">
             <h3 className="section-title" style={{ marginBottom: 'var(--space-base)' }}>
-              <DollarSign size={16} style={{ display: 'inline', verticalAlign: 'middle' }} /> Financial
+              <DollarSign size={16} style={{ display: 'inline', verticalAlign: 'middle' }} /> Pricing
             </h3>
             <div className={styles.financeList}>
-              {p.asking_price && <div className={styles.financeRow}><span>Asking Price</span><strong>{formatCurrencyFull(p.asking_price)}</strong></div>}
-              {p.price_per_sqft && <div className={styles.financeRow}><span>Rate/Sq.Ft</span><strong>{formatRate(p.price_per_sqft)}</strong></div>}
-              {p.price_per_sqyard && <div className={styles.financeRow}><span>Rate/Sq.Yard</span><strong>{formatRate(p.price_per_sqyard, 'sq.yard')}</strong></div>}
+              {p.price_per_unit && <div className={styles.financeRow}><span>Price per {p.area_unit === 'sq.m' ? 'sq m' : p.area_unit === 'sq.ft' ? 'sq ft' : p.area_unit}</span><strong>{formatRate(p.price_per_unit, p.area_unit)}</strong></div>}
               {p.total_estimated_value && <div className={styles.financeRow}><span>Estimated Value</span><strong>{formatCurrencyFull(p.total_estimated_value)}</strong></div>}
+              {p.is_negotiable !== null && p.is_negotiable !== undefined && (
+                <div className={styles.financeRow}><span>Negotiable</span><span>{p.is_negotiable ? 'Yes' : 'No'}</span></div>
+              )}
+              {p.asking_price && <div className={styles.financeRow}><span>Asking Price</span><span>{formatCurrencyFull(p.asking_price)}</span></div>}
               {p.previous_price && <div className={styles.financeRow}><span>Previous Price</span><span>{formatCurrencyFull(p.previous_price)}</span></div>}
               {p.purchase_price && <div className={styles.financeRow}><span>Purchase Price</span><span>{formatCurrencyFull(p.purchase_price)}</span></div>}
               {p.expected_selling_price && <div className={styles.financeRow}><span>Expected Selling</span><span>{formatCurrencyFull(p.expected_selling_price)}</span></div>}
-              {!p.asking_price && !p.price_per_sqft && !p.total_estimated_value && (
+              
+              {!p.price_per_unit && !p.total_estimated_value && !p.asking_price && (
                 <p style={{ color: 'var(--color-text-tertiary)', fontSize: 'var(--font-size-sm)' }}>No pricing information added</p>
               )}
             </div>
           </div>
+          
+          {/* Confidential Details (Owner/Agent) */}
+          {(p.owner_name || p.agent_name) && (
+            <div className={`card ${styles.confidentialCard}`}>
+               <div className={styles.confidentialHeader} onClick={() => setShowConfidential(!showConfidential)}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                     <Lock size={16} className={styles.lockIcon} />
+                     <h3 className="section-title" style={{ margin: 0, color: 'var(--color-text)' }}>Confidential Details</h3>
+                  </div>
+                  <button className="btn btn-ghost btn-icon btn-sm">
+                     {showConfidential ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                  </button>
+               </div>
+               
+               {showConfidential && (
+                 <div className={styles.confidentialBody}>
+                    <div className={styles.financeList}>
+                      {p.owner_name && <div className={styles.financeRow}><span>Owner</span><strong>{p.owner_name}</strong></div>}
+                      {p.agent_name && <div className={styles.financeRow}><span>Agent</span><strong>{p.agent_name}</strong></div>}
+                    </div>
+                 </div>
+               )}
+            </div>
+          )}
 
           {/* Contacts */}
           <div className="card">
             <div className="section-header">
-              <h3 className="section-title"><Users size={16} style={{ display: 'inline', verticalAlign: 'middle' }} /> Contacts</h3>
+              <h3 className="section-title"><Users size={16} style={{ display: 'inline', verticalAlign: 'middle' }} /> Linked Contacts</h3>
             </div>
             {contacts.length === 0 ? (
               <p style={{ color: 'var(--color-text-tertiary)', fontSize: 'var(--font-size-sm)', marginTop: 8 }}>No contacts linked</p>

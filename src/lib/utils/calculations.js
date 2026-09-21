@@ -7,9 +7,10 @@
  */
 const AREA_CONVERSIONS = {
   'sq.ft': 1,
-  'sq.yards': 9,        // 1 sq.yard = 9 sq.ft
-  'acre': 43560,         // 1 acre = 43560 sq.ft
-  'guntha': 1089,        // 1 guntha = 1089 sq.ft
+  'sq.m': 10.7639,          // 1 sq.m = 10.7639 sq.ft
+  'sq.yards': 9,            // 1 sq.yard = 9 sq.ft
+  'acre': 43560,            // 1 acre = 43560 sq.ft
+  'guntha': 1089,           // 1 guntha = 1089 sq.ft
 };
 
 /**

@@ -101,6 +101,15 @@
   font-weight: var(--font-weight-medium);
 }
 
+/* Map Preview */
+.mapPreview {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  padding: var(--space-sm);
+  background: var(--color-bg);
+}
+
 /* Actions */
 .actions {
   display: flex;

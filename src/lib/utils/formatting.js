@@ -48,9 +48,18 @@ export function formatDimensions(length, width) {
 /**
  * Format rate per unit
  */
+const UNIT_DISPLAY_MAP = {
+  'sq.ft': 'sq ft',
+  'sq.m': 'sq m',
+  'sq.yards': 'sq yard',
+  'acre': 'acre',
+  'guntha': 'guntha',
+};
+
 export function formatRate(rate, unit = 'sq.ft') {
   if (!rate) return '—';
-  return `₹${Number(rate).toLocaleString('en-IN')}/${unit}`;
+  const displayUnit = UNIT_DISPLAY_MAP[unit] || unit;
+  return `₹${Number(rate).toLocaleString('en-IN')}/${displayUnit}`;
 }
 
 /**

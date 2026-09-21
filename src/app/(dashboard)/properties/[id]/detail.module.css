@@ -203,6 +203,47 @@
   padding: 4px 0;
 }
 
+/* Confidential Details */
+.confidentialCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 0;
+  overflow: hidden;
+}
+
+.confidentialHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-base);
+  cursor: pointer;
+  background: var(--color-surface-hover);
+  transition: background var(--transition-fast);
+}
+
+.confidentialHeader:hover {
+  background: var(--color-bg);
+}
+
+.lockIcon {
+  color: var(--color-warning);
+}
+
+.confidentialBody {
+  padding: var(--space-base);
+  border-top: 1px solid var(--color-divider);
+  background: var(--color-bg);
+}
+
+/* Map Embed Container */
+.mapEmbedContainer {
+  margin-top: var(--space-sm);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+}
+
 @media (max-width: 1024px) {
   .grid { grid-template-columns: 1fr; }
   .header { flex-direction: column; }

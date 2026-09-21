@@ -15,11 +15,12 @@ export const PROPERTY_STATUSES = [
 export const FACING_OPTIONS = [
   'North', 'South', 'East', 'West',
   'North-East', 'North-West', 'South-East', 'South-West',
-  'Unknown'
+  'Garden Facing', 'Unknown'
 ];
 
 export const AREA_UNITS = [
-  { value: 'sq.ft', label: 'Sq. Ft' },
+  { value: 'sq.ft', label: 'Square Feet (sq ft)' },
+  { value: 'sq.m', label: 'Square Meter (sq m)' },
   { value: 'sq.yards', label: 'Sq. Yards' },
   { value: 'acre', label: 'Acre' },
   { value: 'guntha', label: 'Guntha' },

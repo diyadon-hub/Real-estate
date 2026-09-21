@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { ArrowLeft, Save, Upload, X, MapPin, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Save, Upload, X, MapPin, Image as ImageIcon, Search } from 'lucide-react';
 import { PROPERTY_TYPES, PROPERTY_STATUSES, FACING_OPTIONS, AREA_UNITS } from '@/lib/utils/constants';
 import { calculateArea, calculateTotalValue, calculateRate } from '@/lib/utils/calculations';
 import styles from './add.module.css';
@@ -20,12 +20,13 @@ export default function AddPropertyPage() {
   const [form, setForm] = useState({
     title: '', property_type: '', area_name: '', area_id: '',
     address: '', city: '', plot_number: '', survey_number: '',
-    latitude: '', longitude: '',
+    latitude: '', longitude: '', google_maps_link: '',
+    number_of_floors: '',
     length: '', width: '', total_area: '', area_unit: 'sq.ft',
     facing: '', road_width: '', is_corner: false, development_status: '',
     status: 'Available',
-    asking_price: '', price_per_sqft: '', price_per_sqyard: '',
-    total_estimated_value: '', previous_price: '', purchase_price: '', expected_selling_price: '',
+    owner_name: '', agent_name: '',
+    price_per_unit: '', is_negotiable: false,
     description: '', internal_notes: '',
     nearby_landmark: '', development_potential: '',
   });
@@ -39,34 +40,74 @@ export default function AddPropertyPage() {
     setAreas(data || []);
   };
 
+  // Get the display label for the currently selected area unit
+  const getUnitLabel = () => {
+    const unit = AREA_UNITS.find(u => u.value === form.area_unit);
+    return unit ? unit.label : form.area_unit;
+  };
+
+  // Get short unit label for display in calculations
+  const getShortUnitLabel = () => {
+    const map = { 'sq.ft': 'sq ft', 'sq.m': 'sq m', 'sq.yards': 'sq yards', 'acre': 'acre', 'guntha': 'guntha' };
+    return map[form.area_unit] || form.area_unit;
+  };
+
   const updateField = (field, value) => {
     setForm(prev => {
       const updated = { ...prev, [field]: value };
-      // Auto-calculate
+      // Auto-calculate total area from length × width
       if (field === 'length' || field === 'width') {
-        const area = calculateArea(
-          field === 'length' ? value : prev.length,
-          field === 'width' ? value : prev.width
-        );
-        if (area && !prev.total_area) updated.total_area = String(area);
-      }
-      if ((field === 'total_area' || field === 'price_per_sqft') && !prev.total_estimated_value) {
-        const total = calculateTotalValue(
-          field === 'total_area' ? value : prev.total_area,
-          field === 'price_per_sqft' ? value : prev.price_per_sqft
-        );
-        if (total) updated.total_estimated_value = String(Math.round(total));
-      }
-      if ((field === 'total_estimated_value' || field === 'total_area') && !prev.price_per_sqft) {
-        const rate = calculateRate(
-          field === 'total_estimated_value' ? value : prev.total_estimated_value,
-          field === 'total_area' ? value : prev.total_area
-        );
-        if (rate) updated.price_per_sqft = String(Math.round(rate));
+        const l = field === 'length' ? value : prev.length;
+        const w = field === 'width' ? value : prev.width;
+        const area = calculateArea(l, w);
+        if (area !== null) {
+          updated.total_area = String(area);
+        }
       }
       if (field === 'area_id') {
         const area = areas.find(a => a.id === value);
         if (area) updated.area_name = area.name;
+      }
+      return updated;
+    });
+  };
+
+  // Calculate total value dynamically (for display only)
+  const getTotalValue = () => {
+    const area = Number(form.total_area);
+    const rate = Number(form.price_per_unit);
+    if (area > 0 && rate > 0) {
+      return area * rate;
+    }
+    return null;
+  };
+
+  // Parse Google Maps link to extract coordinates
+  const parseGoogleMapsLink = (link) => {
+    if (!link) return null;
+    // Pattern: @lat,lng or q=lat,lng or ll=lat,lng
+    const patterns = [
+      /@(-?\d+\.?\d*),(-?\d+\.?\d*)/,
+      /[?&]q=(-?\d+\.?\d*),(-?\d+\.?\d*)/,
+      /[?&]ll=(-?\d+\.?\d*),(-?\d+\.?\d*)/,
+      /place\/[^/]+\/(-?\d+\.?\d*),(-?\d+\.?\d*)/,
+    ];
+    for (const pattern of patterns) {
+      const match = link.match(pattern);
+      if (match) {
+        return { lat: match[1], lng: match[2] };
+      }
+    }
+    return null;
+  };
+
+  const handleMapsLinkChange = (link) => {
+    setForm(prev => {
+      const updated = { ...prev, google_maps_link: link };
+      const coords = parseGoogleMapsLink(link);
+      if (coords) {
+        updated.latitude = coords.lat;
+        updated.longitude = coords.lng;
       }
       return updated;
     });
@@ -113,19 +154,27 @@ export default function AddPropertyPage() {
 
       // Build the property data - only include non-empty values
       const propertyData = { user_id: user.id };
+      const numberFields = ['length', 'width', 'total_area', 'price_per_unit',
+        'latitude', 'longitude', 'number_of_floors'];
+      const booleanFields = ['is_corner', 'is_negotiable'];
+
       Object.entries(form).forEach(([key, value]) => {
         if (value !== '' && value !== null && value !== undefined) {
-          if (['length', 'width', 'total_area', 'asking_price', 'price_per_sqft', 'price_per_sqyard',
-            'total_estimated_value', 'previous_price', 'purchase_price', 'expected_selling_price',
-            'latitude', 'longitude'].includes(key)) {
+          if (numberFields.includes(key)) {
             propertyData[key] = value ? Number(value) : null;
-          } else if (key === 'is_corner') {
+          } else if (booleanFields.includes(key)) {
             propertyData[key] = Boolean(value);
           } else {
             propertyData[key] = value;
           }
         }
       });
+
+      // Calculate total estimated value from price_per_unit × total_area
+      const totalValue = getTotalValue();
+      if (totalValue) {
+        propertyData.total_estimated_value = Math.round(totalValue);
+      }
 
       const { data: property, error: insertError } = await supabase
         .from('properties')
@@ -188,6 +237,8 @@ export default function AddPropertyPage() {
     }
   };
 
+  const totalValue = getTotalValue();
+
   return (
     <div className={styles.page}>
       <div className={styles.header}>
@@ -233,6 +284,13 @@ export default function AddPropertyPage() {
                 <input className="form-input" placeholder="e.g., 123/A" value={form.survey_number} onChange={e => updateField('survey_number', e.target.value)} />
               </div>
             </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Number of Floors</label>
+                <input className="form-input" type="number" min="0" step="1" placeholder="e.g., 3" value={form.number_of_floors} onChange={e => updateField('number_of_floors', e.target.value)} />
+              </div>
+              <div className="form-group" />
+            </div>
           </div>
         </div>
 
@@ -252,6 +310,11 @@ export default function AddPropertyPage() {
               <div className="form-group">
                 <label className="form-label">Total Area</label>
                 <input className="form-input" type="number" step="any" placeholder="Auto-calculated" value={form.total_area} onChange={e => updateField('total_area', e.target.value)} />
+                {form.length && form.width && (
+                  <span className="form-hint" style={{ color: 'var(--color-success)' }}>
+                    = {Number(form.length).toLocaleString('en-IN')} × {Number(form.width).toLocaleString('en-IN')} = {(Number(form.length) * Number(form.width)).toLocaleString('en-IN')} {getShortUnitLabel()}
+                  </span>
+                )}
               </div>
             </div>
             <div className="form-row">
@@ -316,6 +379,18 @@ export default function AddPropertyPage() {
                 <input className="form-input" placeholder="e.g., Near XYZ Hospital" value={form.nearby_landmark} onChange={e => updateField('nearby_landmark', e.target.value)} />
               </div>
             </div>
+
+            {/* Google Maps Location */}
+            <div className="form-group">
+              <label className="form-label"><MapPin size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }} />Google Maps Location</label>
+              <input
+                className="form-input"
+                placeholder="Paste Google Maps link or search URL..."
+                value={form.google_maps_link}
+                onChange={e => handleMapsLinkChange(e.target.value)}
+              />
+              <span className="form-hint">Paste a Google Maps link to auto-fill coordinates, or enter latitude/longitude manually below</span>
+            </div>
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">Latitude</label>
@@ -326,6 +401,49 @@ export default function AddPropertyPage() {
                 <input className="form-input" type="number" step="any" placeholder="e.g., 77.5946" value={form.longitude} onChange={e => updateField('longitude', e.target.value)} />
               </div>
             </div>
+            {form.latitude && form.longitude && (
+              <div className={styles.mapPreview}>
+                <iframe
+                  width="100%"
+                  height="200"
+                  style={{ border: 0, borderRadius: 'var(--radius-md)' }}
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  src={`https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''}&q=${form.latitude},${form.longitude}&zoom=15`}
+                  allowFullScreen
+                  onError={(e) => { e.target.style.display = 'none'; }}
+                />
+                <a
+                  href={`https://www.google.com/maps?q=${form.latitude},${form.longitude}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="form-hint"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 4 }}
+                >
+                  <MapPin size={12} /> Open in Google Maps
+                </a>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Owner & Agent Details */}
+        <div className="form-section">
+          <h3 className="form-section-title">Owner & Agent Details</h3>
+          <span className="form-hint" style={{ display: 'block', marginBottom: 'var(--space-sm)', marginTop: '-4px' }}>
+            🔒 These details are private and will not be publicly visible
+          </span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-base)' }}>
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Owner's Name</label>
+                <input className="form-input" placeholder="e.g., Mr. Ravi Kumar" value={form.owner_name} onChange={e => updateField('owner_name', e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Agent's Name</label>
+                <input className="form-input" placeholder="e.g., Mr. Suresh" value={form.agent_name} onChange={e => updateField('agent_name', e.target.value)} />
+              </div>
+            </div>
           </div>
         </div>
 
@@ -333,37 +451,24 @@ export default function AddPropertyPage() {
         <div className="form-section">
           <h3 className="form-section-title">Pricing</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-base)' }}>
-            <div className="form-row-3">
+            <div className="form-row">
               <div className="form-group">
-                <label className="form-label">Asking Price (₹)</label>
-                <input className="form-input" type="number" step="any" placeholder="e.g., 2400000" value={form.asking_price} onChange={e => updateField('asking_price', e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Rate per Sq.Ft (₹)</label>
-                <input className="form-input" type="number" step="any" placeholder="e.g., 2000" value={form.price_per_sqft} onChange={e => updateField('price_per_sqft', e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Estimated Value (₹)</label>
-                <input className="form-input" type="number" step="any" placeholder="Auto-calculated" value={form.total_estimated_value} onChange={e => updateField('total_estimated_value', e.target.value)} />
-                {form.total_area && form.price_per_sqft && (
+                <label className="form-label">Price per {getShortUnitLabel()} (₹)</label>
+                <input className="form-input" type="number" step="any" placeholder={`e.g., ${form.area_unit === 'sq.m' ? '50000' : '5000'}`} value={form.price_per_unit} onChange={e => updateField('price_per_unit', e.target.value)} />
+                {totalValue && (
                   <span className="form-hint" style={{ color: 'var(--color-success)' }}>
-                    = {Number(form.total_area).toLocaleString('en-IN')} × ₹{Number(form.price_per_sqft).toLocaleString('en-IN')} = ₹{(Number(form.total_area) * Number(form.price_per_sqft)).toLocaleString('en-IN')}
+                    Total Value: {Number(form.total_area).toLocaleString('en-IN')} {getShortUnitLabel()} × ₹{Number(form.price_per_unit).toLocaleString('en-IN')} = ₹{Math.round(totalValue).toLocaleString('en-IN')}
                   </span>
                 )}
               </div>
-            </div>
-            <div className="form-row-3">
-              <div className="form-group">
-                <label className="form-label">Previous Price (₹)</label>
-                <input className="form-input" type="number" step="any" value={form.previous_price} onChange={e => updateField('previous_price', e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Purchase Price (₹)</label>
-                <input className="form-input" type="number" step="any" value={form.purchase_price} onChange={e => updateField('purchase_price', e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Expected Selling Price (₹)</label>
-                <input className="form-input" type="number" step="any" value={form.expected_selling_price} onChange={e => updateField('expected_selling_price', e.target.value)} />
+              <div className="form-group" style={{ justifyContent: 'flex-end' }}>
+                <label className="form-checkbox">
+                  <input type="checkbox" checked={form.is_negotiable} onChange={e => updateField('is_negotiable', e.target.checked)} />
+                  Negotiable
+                </label>
+                <span className="form-hint" style={{ marginTop: 4 }}>
+                  {form.is_negotiable ? '✓ Price is negotiable' : 'Price is non-negotiable'}
+                </span>
               </div>
             </div>
           </div>
