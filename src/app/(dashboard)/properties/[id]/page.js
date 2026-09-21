@@ -24,6 +24,9 @@ export default function PropertyDetailPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [showConfidential, setShowConfidential] = useState(false);
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [pinInput, setPinInput] = useState('');
+  const [pinError, setPinError] = useState('');
 
   useEffect(() => { loadProperty(); }, [id]);
 
@@ -218,7 +221,15 @@ export default function PropertyDetailPage() {
           {/* Confidential Details (Owner/Agent) */}
           {(p.owner_name || p.agent_name) && (
             <div className={`card ${styles.confidentialCard}`}>
-               <div className={styles.confidentialHeader} onClick={() => setShowConfidential(!showConfidential)}>
+               <div className={styles.confidentialHeader} onClick={() => {
+                 if (showConfidential) {
+                   setShowConfidential(false);
+                 } else {
+                   setShowConfidential(true);
+                   setPinInput('');
+                   setPinError('');
+                 }
+               }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                      <Lock size={16} className={styles.lockIcon} />
                      <h3 className="section-title" style={{ margin: 0, color: 'var(--color-text)' }}>Confidential Details</h3>
@@ -230,10 +241,58 @@ export default function PropertyDetailPage() {
                
                {showConfidential && (
                  <div className={styles.confidentialBody}>
-                    <div className={styles.financeList}>
-                      {p.owner_name && <div className={styles.financeRow}><span>Owner</span><strong>{p.owner_name}</strong></div>}
-                      {p.agent_name && <div className={styles.financeRow}><span>Agent</span><strong>{p.agent_name}</strong></div>}
-                    </div>
+                    {!isUnlocked ? (
+                      <div style={{ padding: 'var(--space-sm) 0', display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
+                        <p style={{ margin: 0, fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)' }}>
+                          Please enter the Master PIN to view owner and agent details.
+                        </p>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                          <div>
+                            <input 
+                              type="password" 
+                              className="form-input" 
+                              placeholder="Enter PIN" 
+                              value={pinInput}
+                              onChange={(e) => {
+                                setPinInput(e.target.value);
+                                setPinError('');
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  if (pinInput === process.env.NEXT_PUBLIC_CONFIDENTIAL_PIN) {
+                                    setIsUnlocked(true);
+                                  } else {
+                                    setPinError('Incorrect PIN');
+                                  }
+                                }
+                              }}
+                            />
+                            {pinError && <span className="form-hint" style={{ color: 'var(--color-danger)' }}>{pinError}</span>}
+                          </div>
+                          <button 
+                            className="btn btn-primary" 
+                            onClick={() => {
+                              if (pinInput === process.env.NEXT_PUBLIC_CONFIDENTIAL_PIN) {
+                                setIsUnlocked(true);
+                              } else {
+                                setPinError('Incorrect PIN');
+                              }
+                            }}
+                          >
+                            Unlock
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className={styles.financeList}>
+                        {p.owner_name && <div className={styles.financeRow}><span>Owner</span><strong>{p.owner_name}</strong></div>}
+                        {p.agent_name && <div className={styles.financeRow}><span>Agent</span><strong>{p.agent_name}</strong></div>}
+                        <div style={{ marginTop: 'var(--space-sm)', textAlign: 'right' }}>
+                          <button className="btn btn-ghost btn-sm" onClick={() => { setIsUnlocked(false); setShowConfidential(false); }}>Lock Again</button>
+                        </div>
+                      </div>
+                    )}
                  </div>
                )}
             </div>
