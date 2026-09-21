@@ -262,10 +262,7 @@ export default function AddPropertyPage() {
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">Property Type</label>
-                <select className="form-select" value={form.property_type} onChange={e => updateField('property_type', e.target.value)}>
-                  <option value="">Select type</option>
-                  {PROPERTY_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                </select>
+                <input className="form-input" placeholder="e.g., Apartment, Plot" value={form.property_type} onChange={e => updateField('property_type', e.target.value)} />
               </div>
               <div className="form-group">
                 <label className="form-label">Status</label>
@@ -351,19 +348,9 @@ export default function AddPropertyPage() {
         <div className="form-section">
           <h3 className="form-section-title">Location</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-base)' }}>
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Area / Locality</label>
-                <select className="form-select" value={form.area_id} onChange={e => updateField('area_id', e.target.value)}>
-                  <option value="">Select or type area</option>
-                  {areas.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-                </select>
-                <span className="form-hint">Or type a custom area name below</span>
-              </div>
-              <div className="form-group">
-                <label className="form-label">Area Name (custom)</label>
-                <input className="form-input" placeholder="e.g., Koramangala" value={form.area_name} onChange={e => updateField('area_name', e.target.value)} />
-              </div>
+            <div className="form-group">
+              <label className="form-label">Area / Locality</label>
+              <input className="form-input" placeholder="e.g., Koramangala" value={form.area_name} onChange={e => updateField('area_name', e.target.value)} />
             </div>
             <div className="form-group">
               <label className="form-label">Address</label>

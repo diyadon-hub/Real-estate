@@ -176,10 +176,7 @@ export default function EditPropertyPage() {
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">Property Type</label>
-                <select className="form-select" value={form.property_type || ''} onChange={e => updateField('property_type', e.target.value)}>
-                  <option value="">Select type</option>
-                  {PROPERTY_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                </select>
+                <input className="form-input" placeholder="e.g., Apartment, Plot" value={form.property_type || ''} onChange={e => updateField('property_type', e.target.value)} />
               </div>
               <div className="form-group">
                 <label className="form-label">Status</label>
