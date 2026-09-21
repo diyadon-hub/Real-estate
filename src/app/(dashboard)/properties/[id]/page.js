@@ -260,7 +260,8 @@ export default function PropertyDetailPage() {
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter') {
                                   e.preventDefault();
-                                  if (pinInput === process.env.NEXT_PUBLIC_CONFIDENTIAL_PIN) {
+                                  const correctPin = process.env.NEXT_PUBLIC_CONFIDENTIAL_PIN || '1234';
+                                  if (pinInput.trim() === correctPin.trim()) {
                                     setIsUnlocked(true);
                                   } else {
                                     setPinError('Incorrect PIN');
@@ -273,7 +274,8 @@ export default function PropertyDetailPage() {
                           <button 
                             className="btn btn-primary" 
                             onClick={() => {
-                              if (pinInput === process.env.NEXT_PUBLIC_CONFIDENTIAL_PIN) {
+                              const correctPin = process.env.NEXT_PUBLIC_CONFIDENTIAL_PIN || '1234';
+                              if (pinInput.trim() === correctPin.trim()) {
                                 setIsUnlocked(true);
                               } else {
                                 setPinError('Incorrect PIN');
