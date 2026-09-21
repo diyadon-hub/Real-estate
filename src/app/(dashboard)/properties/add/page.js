@@ -26,7 +26,7 @@ export default function AddPropertyPage() {
     facing: '', road_width: '', is_corner: false, development_status: '',
     status: 'Available',
     owner_name: '', agent_name: '',
-    price_per_unit: '', is_negotiable: false,
+    price_per_unit: '', negotiable_price: '',
     description: '', internal_notes: '',
     nearby_landmark: '', development_potential: '',
   });
@@ -154,9 +154,9 @@ export default function AddPropertyPage() {
 
       // Build the property data - only include non-empty values
       const propertyData = { user_id: user.id };
-      const numberFields = ['length', 'width', 'total_area', 'price_per_unit',
+      const numberFields = ['length', 'width', 'total_area', 'price_per_unit', 'negotiable_price',
         'latitude', 'longitude', 'number_of_floors'];
-      const booleanFields = ['is_corner', 'is_negotiable'];
+      const booleanFields = ['is_corner'];
 
       Object.entries(form).forEach(([key, value]) => {
         if (value !== '' && value !== null && value !== undefined) {
@@ -448,13 +448,11 @@ export default function AddPropertyPage() {
                   </span>
                 )}
               </div>
-              <div className="form-group" style={{ justifyContent: 'flex-end' }}>
-                <label className="form-checkbox">
-                  <input type="checkbox" checked={form.is_negotiable} onChange={e => updateField('is_negotiable', e.target.checked)} />
-                  Negotiable
-                </label>
+              <div className="form-group">
+                <label className="form-label">Negotiable Price (₹)</label>
+                <input className="form-input" type="number" step="any" placeholder="e.g., 48000" value={form.negotiable_price} onChange={e => updateField('negotiable_price', e.target.value)} />
                 <span className="form-hint" style={{ marginTop: 4 }}>
-                  {form.is_negotiable ? '✓ Price is negotiable' : 'Price is non-negotiable'}
+                  Enter the final negotiable price if applicable
                 </span>
               </div>
             </div>

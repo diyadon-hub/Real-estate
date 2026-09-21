@@ -203,9 +203,7 @@ export default function PropertyDetailPage() {
             <div className={styles.financeList}>
               {p.price_per_unit && <div className={styles.financeRow}><span>Price per {p.area_unit === 'sq.m' ? 'sq m' : p.area_unit === 'sq.ft' ? 'sq ft' : p.area_unit}</span><strong>{formatRate(p.price_per_unit, p.area_unit)}</strong></div>}
               {p.total_estimated_value && <div className={styles.financeRow}><span>Estimated Value</span><strong>{formatCurrencyFull(p.total_estimated_value)}</strong></div>}
-              {p.is_negotiable !== null && p.is_negotiable !== undefined && (
-                <div className={styles.financeRow}><span>Negotiable</span><span>{p.is_negotiable ? 'Yes' : 'No'}</span></div>
-              )}
+              {p.negotiable_price && <div className={styles.financeRow}><span>Negotiable Price</span><span>{formatCurrencyFull(p.negotiable_price)}</span></div>}
               {p.asking_price && <div className={styles.financeRow}><span>Asking Price</span><span>{formatCurrencyFull(p.asking_price)}</span></div>}
               {p.previous_price && <div className={styles.financeRow}><span>Previous Price</span><span>{formatCurrencyFull(p.previous_price)}</span></div>}
               {p.purchase_price && <div className={styles.financeRow}><span>Purchase Price</span><span>{formatCurrencyFull(p.purchase_price)}</span></div>}

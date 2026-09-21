@@ -33,7 +33,7 @@ export default function EditPropertyPage() {
       formData[key] = value !== null && value !== undefined ? String(value) : '';
     });
     formData.is_corner = data.is_corner || false;
-    formData.is_negotiable = data.is_negotiable || false;
+    formData.negotiable_price = data.negotiable_price !== null && data.negotiable_price !== undefined ? String(data.negotiable_price) : '';
     setForm(formData);
     setLoading(false);
   };
@@ -107,11 +107,11 @@ export default function EditPropertyPage() {
 
     try {
       const updateData = {};
-      const numberFields = ['length', 'width', 'total_area', 'price_per_unit',
+      const numberFields = ['length', 'width', 'total_area', 'price_per_unit', 'negotiable_price',
         'latitude', 'longitude', 'number_of_floors',
         'asking_price', 'price_per_sqft', 'price_per_sqyard',
         'total_estimated_value', 'previous_price', 'purchase_price', 'expected_selling_price'];
-      const booleanFields = ['is_corner', 'is_negotiable'];
+      const booleanFields = ['is_corner'];
 
       Object.entries(form).forEach(([key, value]) => {
         if (['id', 'user_id', 'created_at', 'updated_at', 'display_id', 'is_deleted', 'deleted_at'].includes(key)) return;
@@ -362,13 +362,11 @@ export default function EditPropertyPage() {
                   </span>
                 )}
               </div>
-              <div className="form-group" style={{ justifyContent: 'flex-end' }}>
-                <label className="form-checkbox">
-                  <input type="checkbox" checked={form.is_negotiable || false} onChange={e => updateField('is_negotiable', e.target.checked)} />
-                  Negotiable
-                </label>
+              <div className="form-group">
+                <label className="form-label">Negotiable Price (₹)</label>
+                <input className="form-input" type="number" step="any" placeholder="e.g., 48000" value={form.negotiable_price || ''} onChange={e => updateField('negotiable_price', e.target.value)} />
                 <span className="form-hint" style={{ marginTop: 4 }}>
-                  {form.is_negotiable ? '✓ Price is negotiable' : 'Price is non-negotiable'}
+                  Enter the final negotiable price if applicable
                 </span>
               </div>
             </div>

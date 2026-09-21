@@ -12,7 +12,7 @@ ALTER TABLE properties ADD COLUMN IF NOT EXISTS agent_name TEXT;
 
 -- Pricing updates
 ALTER TABLE properties ADD COLUMN IF NOT EXISTS price_per_unit NUMERIC;
-ALTER TABLE properties ADD COLUMN IF NOT EXISTS is_negotiable BOOLEAN DEFAULT FALSE;
+ALTER TABLE properties ADD COLUMN IF NOT EXISTS negotiable_price NUMERIC;
 
 -- Google Maps
 ALTER TABLE properties ADD COLUMN IF NOT EXISTS google_maps_link TEXT;
